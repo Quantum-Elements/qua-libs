@@ -1,29 +1,23 @@
 # %% {Imports}
+from dataclasses import asdict
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from dataclasses import asdict
-
+from calibration_utils.resonator_spectroscopy import (
+    Parameters, fit_raw_data, log_fitted_results, plot_raw_amplitude_with_fit,
+    plot_raw_phase, plotly_plot_raw_amplitude_with_fit, plotly_plot_raw_phase,
+    process_raw_dataset)
 from qm.qua import *
-
 from qualang_tools.loops import from_array
 from qualang_tools.multi_user import qm_session
 from qualang_tools.results import progress_counter
 from qualang_tools.units import unit
-
 from qualibrate import QualibrationNode
-from quam_config import Quam
-from calibration_utils.resonator_spectroscopy import (
-    Parameters,
-    process_raw_dataset,
-    fit_raw_data,
-    log_fitted_results,
-    plot_raw_amplitude_with_fit,
-    plot_raw_phase,
-)
+from qualibration_libs.data import XarrayDataFetcher
 from qualibration_libs.parameters import get_qubits
 from qualibration_libs.runtime import simulate_and_plot
-from qualibration_libs.data import XarrayDataFetcher
+from quam_config import Quam
 
 # %% {Initialisation}
 description = """
@@ -196,10 +190,19 @@ def plot_data(node: QualibrationNode[Parameters, Quam]):
         node.results["ds_raw"], node.namespace["qubits"], node.results["ds_fit"]
     )
     plt.show()
-    # Store the generated figures
+
+    # Plotly interactive figures
+    plotly_phase = plotly_plot_raw_phase(node.results["ds_raw"], node.namespace["qubits"])
+    plotly_amplitude = plotly_plot_raw_amplitude_with_fit(
+        node.results["ds_raw"], node.namespace["qubits"], node.results["ds_fit"]
+    )
+
+    # Store both static and interactive figure links
     node.results["figures"] = {
+        "phase_plotly": plotly_phase,
+        "amplitude_plotly": plotly_amplitude,
         "phase": fig_raw_phase,
-        "amplitude": fig_fit_amplitude,
+        "amplitude": fig_fit_amplitude
     }
 
 
