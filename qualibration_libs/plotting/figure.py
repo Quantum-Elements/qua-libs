@@ -6,7 +6,7 @@ import numpy as np
 import plotly.graph_objects as go
 import xarray as xr
 
-from .config import CURRENT_THEME, CURRENT_RC, CURRENT_PALETTE, apply_theme_to_layout
+from . import config as _config
 from .grid import QubitGrid
 from .overlays import Overlay
 from .typing import DataLike
@@ -100,7 +100,7 @@ class QualibrationFigure:
         from plotly.subplots import make_subplots
         if residuals:
             total_rows = n_rows * 2
-            rratio = float(getattr(CURRENT_THEME, "residuals_height_ratio", 0.35))
+            rratio = float(getattr(_config.CURRENT_THEME, "residuals_height_ratio", 0.35))
             main_h = max(0.0, min(1.0, 1.0 - rratio))
             row_heights = []
             for _ in range(n_rows):
@@ -175,18 +175,18 @@ class QualibrationFigure:
                 else:
                     panel_overlays = overlays
                 for ov in panel_overlays:
-                    ov.add_to(self._fig, row=row_main, col=col, theme=CURRENT_THEME, **style_overrides)
+                    ov.add_to(self._fig, row=row_main, col=col, theme=_config.CURRENT_THEME, **style_overrides)
 
             if residuals and row_resid is not None:
                 self._fig.add_shape(type="line", x0=0, x1=1, y0=0, y1=0, xref="paper", yref="y", line={"dash": "dot"},
                                     row=row_resid, col=col)
                 self._fig.update_yaxes(title_text="Residuals", row=row_resid, col=col)
 
-        apply_theme_to_layout(self._fig.layout)
-        if CURRENT_PALETTE:
-            self._fig.update_layout(colorway=list(CURRENT_PALETTE))
+        _config.apply_theme_to_layout(self._fig.layout)
+        if _config.CURRENT_PALETTE:
+            self._fig.update_layout(colorway=list(_config.CURRENT_PALETTE))
         if title:
-            self._fig.update_layout(title=dict(text=title, font=dict(size=CURRENT_THEME.title_size)))
+            self._fig.update_layout(title=dict(text=title, font=dict(size=_config.CURRENT_THEME.title_size)))
 
-        if CURRENT_RC.values.get("showlegend") is not None:
-            self._fig.update_layout(showlegend=bool(CURRENT_RC.values["showlegend"]))
+        if _config.CURRENT_RC.values.get("showlegend") is not None:
+            self._fig.update_layout(showlegend=bool(_config.CURRENT_RC.values["showlegend"]))

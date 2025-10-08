@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Dict, Tuple, Optional, Iterable
 
 from .config import PlotTheme
+from . import config as _config
 
 _PALETTES: Dict[str, Tuple[str, ...]] = {
     "qualibrate": PlotTheme().colorway,
@@ -19,24 +20,24 @@ def set_theme(
     palette: Optional[str | Iterable[str]] = None,
     rc: Optional[dict] = None
 ) -> None:
-    global CURRENT_THEME, CURRENT_PALETTE, CURRENT_RC
     if theme is not None:
-        CURRENT_THEME = theme
+        # Mutate existing theme object in-place so all modules holding a reference see updates
+        for k, v in theme.__dict__.items():
+            setattr(_config.CURRENT_THEME, k, v)
     if palette is not None:
         if isinstance(palette, str):
-            CURRENT_PALETTE = _PALETTES.get(palette, PlotTheme().colorway)
+            _config.CURRENT_PALETTE = _PALETTES.get(palette, PlotTheme().colorway)
         else:
-            CURRENT_PALETTE = tuple(palette)
+            _config.CURRENT_PALETTE = tuple(palette)
     if rc is not None:
-        CURRENT_RC.values.update(rc)
+        _config.CURRENT_RC.values.update(rc)
 
 
 def set_palette(palette: str | Iterable[str]) -> None:
-    global CURRENT_PALETTE
     if isinstance(palette, str):
-        CURRENT_PALETTE = _PALETTES.get(palette, PlotTheme().colorway)
+        _config.CURRENT_PALETTE = _PALETTES.get(palette, PlotTheme().colorway)
     else:
-        CURRENT_PALETTE = tuple(palette)
+        _config.CURRENT_PALETTE = tuple(palette)
 
 
 @contextmanager
@@ -45,15 +46,17 @@ def theme_context(
     palette: Optional[str | Iterable[str]] = None,
     rc: Optional[dict] = None
 ):
-    global CURRENT_THEME, CURRENT_PALETTE, CURRENT_RC
-    orig_theme = CURRENT_THEME
-    orig_palette = CURRENT_PALETTE
-    orig_rc = dict(CURRENT_RC.values)
+    # Snapshot current theme values to restore later
+    orig_theme = PlotTheme(**_config.CURRENT_THEME.__dict__)
+    orig_palette = _config.CURRENT_PALETTE
+    orig_rc = dict(_config.CURRENT_RC.values)
     try:
         set_theme(theme, palette=palette, rc=rc)
         yield
     finally:
-        CURRENT_THEME = orig_theme
-        CURRENT_PALETTE = orig_palette
-        CURRENT_RC.values.clear()
-        CURRENT_RC.values.update(orig_rc)
+        # Restore theme values in-place
+        for k, v in orig_theme.__dict__.items():
+            setattr(_config.CURRENT_THEME, k, v)
+        _config.CURRENT_PALETTE = orig_palette
+        _config.CURRENT_RC.values.clear()
+        _config.CURRENT_RC.values.update(orig_rc)
